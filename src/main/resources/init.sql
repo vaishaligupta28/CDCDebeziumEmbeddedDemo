@@ -1,21 +1,28 @@
 -- Create postgres user if it doesn't exist and set password
-DO
-$$
-BEGIN
-   IF NOT EXISTS (
-      SELECT FROM pg_catalog.pg_roles
-      WHERE  rolname = 'postgres') THEN
-      CREATE USER postgres WITH PASSWORD 'postgres';
-   ELSE
-      ALTER USER postgres WITH PASSWORD 'postgres';
-   END IF;
-END
+DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'cdc_user') THEN
+            CREATE USER cdc_user WITH
+                LOGIN
+                PASSWORD 'test'
+                REPLICATION
+                CONNECTION LIMIT -1;
+
+            RAISE NOTICE 'Created user: cdc_user';
+        ELSE
+            RAISE NOTICE 'User already exists : cdc_user';
+
+            -- Ensure user has replication privileges
+            RAISE NOTICE 'User: cdc_user is given replication access';
+            ALTER USER cdc_user WITH REPLICATION;
+        END IF;
+    END
 $$;
 
--- Grant necessary permissions to postgres user
-GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres;
-GRANT ALL PRIVILEGES ON SCHEMA public TO postgres;
-ALTER USER postgres WITH SUPERUSER;
+-- Grant necessary permissions to postgres cdc_user for replication
+GRANT CONNECT ON DATABASE postgres TO cdc_user;
+GRANT USAGE ON SCHEMA public TO cdc_user;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO cdc_user;
 
 -- Create the student table
 CREATE TABLE IF NOT EXISTS student (

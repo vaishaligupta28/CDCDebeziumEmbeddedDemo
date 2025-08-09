@@ -36,27 +36,32 @@ public class CamelDebeziumListener extends RouteBuilder {
         }
         from("debezium-postgres:my_connector")
                 .routeId("debezium-postgres-route")
-                .process(exchange -> {
-                    // First, let's see what we actually have
-                    Object body = exchange.getIn().getBody();
-                    log.info("[Debug] Body class: {}", body != null ? body.getClass().getName() : "null");
-                    log.info("[Debug] Body content: {}", body);
+                .choice()
+                .when(header("CamelDebeziumIdentifier").contains("heartbeat"))
+                    .log("CDC Heartbeat message received")
+                    .stop()
+                .otherwise()
+                    .process(exchange -> {
+                        // First, let's see what we actually have
+                        Object body = exchange.getIn().getBody();
+                        log.info("[Debug] Body class: {}", body != null ? body.getClass().getName() : "null");
+                        log.info("[Debug] Body content: {}", body);
 
-                    // Extract all the CDC event parts correctly
-                    String operation = exchange.getIn().getHeader("CamelDebeziumOperation", String.class);
-                    Struct afterData = exchange.getIn().getBody(Struct.class);
-                    Struct beforeData = exchange.getIn().getHeader("CamelDebeziumBefore", Struct.class);
-                    Object sourceInfo = exchange.getIn().getHeader("CamelDebeziumSourceMetadata");
-                    Struct keyData = exchange.getIn().getHeader("CamelDebeziumKey", Struct.class);
+                        // Extract all the CDC event parts correctly
+                        String operation = exchange.getIn().getHeader("CamelDebeziumOperation", String.class);
+                        Struct afterData = exchange.getIn().getBody(Struct.class);
+                        Struct beforeData = exchange.getIn().getHeader("CamelDebeziumBefore", Struct.class);
+                        Object sourceInfo = exchange.getIn().getHeader("CamelDebeziumSourceMetadata");
+                        Struct keyData = exchange.getIn().getHeader("CamelDebeziumKey", Struct.class);
 
-                    // Log the complete event
-                    log.info("[Camel Listener] =========================");
-                    log.info("[Camel Listener] Operation: {}", operation);
-                    log.info("[Camel Listener] Key: {}", keyData);
-                    log.info("[Camel Listener] Before: {}", beforeData);
-                    log.info("[Camel Listener] After: {}", afterData);
-                    log.info("[Camel Listener] Source: {}", sourceInfo);
-                    log.info("[Camel Listener] =========================");
+                        // Log the complete event
+                        log.info("[Camel Listener] =========================");
+                        log.info("[Camel Listener] Operation: {}", operation);
+                        log.info("[Camel Listener] Key: {}", keyData);
+                        log.info("[Camel Listener] Before: {}", beforeData);
+                        log.info("[Camel Listener] After: {}", afterData);
+                        log.info("[Camel Listener] Source: {}", sourceInfo);
+                        log.info("[Camel Listener] =========================");
                 });
     }
 }
