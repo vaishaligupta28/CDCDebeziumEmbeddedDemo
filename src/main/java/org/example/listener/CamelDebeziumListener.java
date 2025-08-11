@@ -44,7 +44,7 @@ public class CamelDebeziumListener extends RouteBuilder {
                     .process(exchange -> {
                         // First, let's see what we actually have
                         Object body = exchange.getIn().getBody();
-                        log.info("[Debug] Body class: {}", body != null ? body.getClass().getName() : "null");
+                        log.info("[Debug]    Body class: {}", body != null ? body.getClass().getName() : "null");
                         log.info("[Debug] Body content: {}", body);
 
                         // Extract all the CDC event parts correctly
